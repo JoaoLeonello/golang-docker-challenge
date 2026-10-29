@@ -1,14 +1,11 @@
-FROM golang:1.16-alpine as BUILDER
+FROM golang:1.23-alpine AS builder
 
-RUN mkdir /build
-ADD full-cycle-rocks.go /build/
 WORKDIR /build
-RUN go mod init full-cycle-rocks
-RUN CGO_ENABLED=0 GOOS=linux go build -a -o full-cycle-rocks .
+COPY go.mod full-cycle-rocks.go ./
+# -s -w remove a tabela de símbolos e o DWARF, que não são usados em runtime
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o full-cycle-rocks .
 
-##### Stage 2 #####
 FROM scratch
 
-WORKDIR /app
-COPY --from=BUILDER /build/full-cycle-rocks .
-ENTRYPOINT ["./full-cycle-rocks"]
+COPY --from=builder /build/full-cycle-rocks /full-cycle-rocks
+ENTRYPOINT ["/full-cycle-rocks"]
